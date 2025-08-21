@@ -1,0 +1,19 @@
+name: aletheia-ci
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Run Aletheia demo
+        run: |
+          python -m aletheia.cli compile --seed CI-SEED --trials 5000 --out aletheia_certificate.json --show-bug
+          python -m aletheia.cli verify aletheia_certificate.json
+      - name: Upload certificate
+        uses: actions/upload-artifact@v4
+        with:
+          name: certificate
+          path: aletheia_certificate.json
