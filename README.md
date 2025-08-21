@@ -1,184 +1,261 @@
-# Aletheia: An Epistemic Compiler
+# Aletheia
 
-> *"Evidence matters more than folklore."*
+An epistemic compiler for computational belief certification through adversarial falsification.
 
-Most compilers take your code on faith. They assume that what you wrote is true - that your sort function actually sorts, that your optimization really makes things faster. But in reality every function is a claim about the world.
+## Overview
 
-- "This sorts correctly."
-- "This controller stabilizes the system."
-- "This algorithm is faster on nearly-sorted data."
+Aletheia is a framework for establishing computational trust in software implementations through systematic adversarial testing. It generates cryptographically-verifiable belief certificates that quantify confidence in program correctness based on empirical falsification attempts.
 
-**An epistemic compiler flips the default.** It treats code as hypotheses - falsifiable claims - and refuses to emit binaries until the evidence holds up.
+### Key Features
 
-## Core Concept
+- **Adversarial Testing**: Systematic generation of challenging test cases designed to expose bugs
+- **Deterministic Reproducibility**: SHA256-based seed derivation ensures all results can be independently verified
+- **Parallel Execution**: Multi-threaded trial runner for efficient large-scale testing
+- **Plugin Architecture**: Extensible system for adding new adversaries, oracles, and implementations
+- **Belief Certificates**: JSON-based certificates with stable hashing for audit trails
+- **On-chain Anchoring**: Solidity contracts for blockchain-based certificate verification
+- **Multiple Domains**: Support for different problem domains (sorting, numerical computation, etc.)
 
-Instead of just checking syntax and types, an epistemic compiler:
+## Installation
 
-1. **Treats functions as hypotheses** - Every function must declare its assumptions and test adversaries
-2. **Runs adversarial testing** - Attempts to falsify claims before compilation
-3. **Quantifies belief** - Emits binaries with belief certificates showing confidence levels
-4. **Makes evidence-driven decisions** - Selects algorithms based on actual performance data, not folklore
+```bash
+# Clone the repository
+git clone https://github.com/yourusername/aletheia.git
+cd aletheia
+
+# No external dependencies required - uses Python standard library only
+python3 --version  # Requires Python 3.8+
+```
 
 ## Quick Start
 
+### Run a certification test
+
 ```bash
-# Run the epistemic compiler
-python aletheia_epicompiler.py
+# Run with bug detection demo
+python -m aletheia.cli compile \
+    --seed DEMO-SEED \
+    --trials 5000 \
+    --workers 4 \
+    --out aletheia_certificate.json \
+    --show-bug
 
-# This will:
-# 1. Test buggy vs correct sorting implementations
-# 2. Compare performance on different input distributions
-# 3. Generate a belief certificate with quantified confidence
+# Verify the certificate
+python -m aletheia.cli verify aletheia_certificate.json
 ```
 
-## How It Works
-
-### 1. Epistemic Primitives
-
-The language is extended with epistemic primitives:
-
-```python
-conjecture SortsCorrect
-assume Domain: length in 0..12
-claim φ: is_sorted(qs3(a)) && is_permutation(a, qs3(a))
-refute with adversary DuplicatesBiased
-power α=0.05, budget=20_000
-```
-
-### 2. Adversarial Testing
-
-Instead of assuming correctness, the compiler actively tries to break your code:
-
-```python
-# The compiler generates adversarial inputs
-[0, 8, 3, 0, 1, 6, 6, 1, 3]  # Duplicate-heavy array
-
-# Buggy quicksort output (drops duplicates):
-[0, 1, 3, 6, 8]  # REJECTED - Build fails!
-
-# Fixed quicksort output:
-[0, 0, 1, 1, 3, 3, 6, 6, 8]  # ACCEPTED - Evidence holds
-```
-
-### 3. Performance Claims
-
-The compiler doesn't just check correctness - it verifies performance claims:
-
-```python
-# Folklore: "Quicksort is better on nearly-sorted inputs"
-# Reality: After 1200 trials, mergesort consistently wins
-
-# Compiler synthesizes new rule based on evidence:
-if nearly_sorted(a):
-    use mergesort
-elif distinctness_ratio(a) < 0.03:
-    use quicksort3
-else:
-    use mergesort
-```
-
-### 4. Belief Certificates
-
-Every compiled binary comes with a belief certificate:
+### Example Output
 
 ```
-Claim A (Correctness): quicksort_3way sorts correctly
-- Falsification budget: 20,000 tests
-- Result: 0 failures observed
-- Conservative 95% upper bound on failure probability: 0.00015
-- Verdict: Emit (claim holds at tested power)
-
-Claim B (Performance): On nearly-sorted arrays...
-- Result: Refuted (posterior mean 0.326, P(p>0.5)=0.001)
-- Action: Specialize to mergesort for nearly-sorted inputs
+Bug caught at trial ~4 - example input [3, 4, 3, 1, 5]
+Wrote certificate to aletheia_certificate.json
+Certificate hash: 0x530d81c335c622c9239475706e77c0c065574405b4941e8eb86550e3617b154f
+File sha256: 0xa7b0c6224f52eec7f95ca588ec0a2ba180e91d90b6143327741f45803b54ad8e
 ```
 
 ## Architecture
 
-The epistemic compilation pipeline:
+### Core Components
+
+- **`aletheia/core.py`**: Deterministic runner, epistemic IR, and certificate generation
+- **`aletheia/adversaries.py`**: Test case generators (duplicates, nearly-sorted, float vectors)
+- **`aletheia/oracles.py`**: Correctness checkers for different domains
+- **`aletheia/plugins.py`**: Implementation variants (buggy/fixed quicksort, naive/Kahan dot product)
+- **`aletheia/certificate.py`**: Certificate I/O and hashing utilities
+- **`aletheia/cli.py`**: Command-line interface
+
+### Epistemic IR
+
+```python
+@dataclass
+class Claim:
+    id: str                    # Unique identifier
+    proposition: str           # Human-readable claim
+    domain: Domain            # Problem domain specification
+    adversary: str            # Test generator name
+    oracle: str               # Correctness checker name
+    trials: int               # Number of tests to run
+    power_alpha: float        # Statistical significance level
+```
+
+### Plugin System
+
+Register new components with decorators:
+
+```python
+from aletheia.core import register_generator, register_oracle, register_impl
+
+@register_generator("my_adversary")
+def my_test_generator(rng: random.Random, params: Dict) -> Any:
+    # Generate challenging test cases
+    pass
+
+@register_oracle("my_oracle")
+def my_correctness_checker(input: Any, output: Any) -> Tuple[bool, Dict]:
+    # Return (passed, details)
+    pass
+
+@register_impl("my_implementation")
+def my_algorithm(input: Any, rng: random.Random) -> Any:
+    # Implementation to test
+    pass
+```
+
+## Supported Domains
+
+### 1. Sorting Correctness
+- **Adversary**: Duplicate-heavy and nearly-sorted arrays
+- **Oracle**: Verifies sorted order and permutation preservation
+- **Implementations**: Buggy quicksort (drops duplicates), 3-way quicksort (correct)
+
+### 2. Numerical Stability
+- **Adversary**: Float vectors with extreme magnitude differences
+- **Oracle**: Compares against `math.fsum` baseline with relative error tolerance
+- **Implementations**: Naive summation, Kahan summation algorithm
+
+## Certificate Format
+
+```json
+{
+  "certVersion": "1.0",
+  "programHash": "0x...",
+  "machine": "hostname",
+  "createdAt": 1234567890.123,
+  "claims": [
+    {
+      "id": "SortsCorrect@quicksort3",
+      "proposition": "quicksort3 sorts correctly...",
+      "domain": {"name": "int_array", "params": {...}},
+      "adversary": "dup_heavy_small",
+      "oracle": "sort_correctness",
+      "power": {"alpha": 0.05, "trials": 5000},
+      "results": {
+        "failures": 0,
+        "trialsRun": 5000,
+        "upper95FailureProb": 0.0006,
+        "rngCommit": "0x843bd0ca...",
+        "durationSec": 0.217
+      }
+    }
+  ]
+}
+```
+
+## On-chain Verification
+
+Solidity contracts for blockchain-based certificate anchoring:
+
+- **`IClaimVerifier.sol`**: Interface for claim verification
+- **`SortingClaimVerifier.sol`**: On-chain sorting correctness checker
+- **`EvidenceRegistry.sol`**: Certificate submission and challenge system
+
+### Challenge Mechanism
+
+1. Submit certificate hash with bond
+2. Challenge window for adversarial refutation
+3. If no valid counterexample found, claim finalizes
+4. Successful challenges slash the bond
+
+## CI/CD Integration
+
+GitHub Actions workflow included for automated testing:
+
+```yaml
+name: aletheia-ci
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Run Aletheia demo
+        run: |
+          python -m aletheia.cli compile --seed CI-SEED --trials 5000 --out aletheia_certificate.json --show-bug
+          python -m aletheia.cli verify aletheia_certificate.json
+```
+
+## Development
+
+### Project Structure
 
 ```
-Source Code → Parse → Extract Claims → Generate Adversaries
-                                              ↓
-    Emit Binary ← Update Beliefs ← Test Claims
-         +
-    Certificate
+aletheia/
+├── aletheia/              # Core Python package
+│   ├── __init__.py
+│   ├── core.py           # Main engine
+│   ├── adversaries.py    # Test generators
+│   ├── oracles.py        # Correctness checkers
+│   ├── plugins.py        # Implementations
+│   ├── certificate.py    # Certificate utilities
+│   ├── anchoring.py      # Blockchain integration
+│   └── cli.py            # CLI interface
+├── solidity/             # Smart contracts
+│   ├── IClaimVerifier.sol
+│   ├── SortingClaimVerifier.sol
+│   └── EvidenceRegistry.sol
+├── .github/workflows/    # CI configuration
+│   └── ci.yml
+├── README.md
+├── LICENSE
+└── .gitignore
 ```
 
-Key components:
-
-- **BetaBernoulliClaim**: Maintains Bayesian posterior for success probability
-- **Adversarial Generators**: Create challenging test cases (duplicates, nearly-sorted, etc.)
-- **Falsification Engine**: Attempts to find counterexamples
-- **Performance Comparator**: Empirically compares algorithm variants
-- **Certificate Generator**: Documents evidence and decisions
-
-## Example Output
-
-Running the compiler on sorting algorithms:
+### Running Tests
 
 ```bash
-$ python aletheia_epicompiler.py
+# Basic test
+python -m aletheia.cli compile --seed TEST --trials 1000 --workers 2 --out test.json
 
-Aletheia prototype run complete in 2.847s
-bug_found_at_trial: 3
-bug_counterexample: [0, 8, 3, 0, 1, 6, 6, 1, 3]
-fixed_tests_run: 20000
-fixed_upper_95_bound: 0.00015
-nearly_sorted_posterior_mean_success: 0.326
-nearly_sorted_prob_better: 0.001
-rho_threshold: 0.03
-certificate_path: ./aletheia_certificate.md
+# Verify reproducibility
+python -m aletheia.cli compile --seed TEST --trials 1000 --workers 2 --out test2.json
+diff test.json test2.json  # Should be identical
+
+# Performance test
+python -m aletheia.cli compile --seed PERF --trials 100000 --workers 8 --out perf.json
 ```
 
-## Applications
+## Theory
 
-### AI/ML
-- Models come with quantified risk assessments
-- Training claims are verified, not assumed
-- Deployment decisions based on evidence
+Aletheia applies Karl Popper's falsificationism to software verification. Instead of proving correctness, it seeks to:
 
-### Robotics
-- Controllers shipped with validation protocols
-- Safety claims verified in simulation before deployment
-- Performance guarantees backed by data
+1. **Generate adversarial inputs** likely to expose bugs
+2. **Run empirical trials** to attempt falsification
+3. **Quantify confidence** using statistical bounds (Rule of Three)
+4. **Create audit trails** via deterministic, reproducible certificates
 
-### Finance/Biotech
-- Trading strategies with belief certificates
-- Clinical protocols with evidence trails
-- Risk quantification built into the compilation
+The system provides a "proof of exhaustive search for counterexamples" rather than formal proof of correctness.
 
-## Philosophy
+## Contributing
 
-Traditional compilers are **assumption machines** - they trust that your code does what you claim.
+Contributions welcome! Areas of interest:
 
-Epistemic compilers are **evidence machines** - they verify claims and quantify confidence.
-
-This isn't just about catching bugs. It's about changing how we think about code - from assertions we make to hypotheses we test.
-
-## Implementation Details
-
-The prototype (`aletheia_epicompiler.py`) demonstrates:
-
-1. **Falsification-first compilation** for correctness claims
-2. **Bayesian updating** for performance beliefs
-3. **Adversarial test generation** with multiple strategies
-4. **Belief certificate emission** with quantified confidence
-
-All in pure Python with no external dependencies.
-
-## Future Work
-
-- Extend to more complex claims (memory usage, concurrency safety)
-- Integrate with formal verification for stronger guarantees
-- Build IDE support for epistemic annotations
-- Create domain-specific adversaries for different applications
-- Develop epistemic type systems
+- New problem domains and adversaries
+- Formal verification integration (TLA+, Coq, Lean)
+- Advanced statistical methods (Bayesian updating, sequential testing)
+- Performance optimizations
+- Additional blockchain platforms
 
 ## License
 
-MIT
+MIT License - see LICENSE file for details
 
----
+## Citation
 
-*"Instead of shipping assumptions, you ship evidence. That's the leap - turning compilers from assumption-machines into epistemic-machines."*
+If you use Aletheia in your research, please cite:
+
+```bibtex
+@software{aletheia2024,
+  title = {Aletheia: An Epistemic Compiler for Computational Belief Certification},
+  author = {Your Name},
+  year = {2024},
+  url = {https://github.com/yourusername/aletheia}
+}
+```
+
+## Contact
+
+- Issues: [GitHub Issues](https://github.com/yourusername/aletheia/issues)
+- Discussions: [GitHub Discussions](https://github.com/yourusername/aletheia/discussions)

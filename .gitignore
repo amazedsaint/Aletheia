@@ -1,3 +1,96 @@
-aletheia/__pycache__/
-*.pyc
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+venv/
+ENV/
+env/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Testing
+.coverage
+.pytest_cache/
+.tox/
+htmlcov/
+.hypothesis/
+.nox/
+coverage.xml
+*.cover
+.cache
+nosetests.xml
+
+# Aletheia specific
 aletheia_certificate.json
+aletheia_certificate_*.json
+*.certificate.json
+test.json
+test2.json
+perf.json
+
+# Logs
+*.log
+logs/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Jupyter
+.ipynb_checkpoints
+*.ipynb
+
+# Documentation
+docs/_build/
+site/
+
+# Package management
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+.coverage.*
+.junit/
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# pytype static type analyzer
+.pytype/
+
+# Cython debug symbols
+cython_debug/

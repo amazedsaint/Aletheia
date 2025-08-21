@@ -1,0 +1,23 @@
+# Aletheia has no external dependencies - uses Python standard library only
+# This file is provided for documentation purposes
+
+# Python 3.8+ required
+# Standard library modules used:
+# - json
+# - hashlib
+# - time
+# - os
+# - platform
+# - dataclasses
+# - typing
+# - concurrent.futures
+# - random
+# - collections
+# - math
+# - argparse
+
+# Optional development dependencies:
+# pytest>=7.0.0  # For testing
+# mypy>=1.0.0    # For type checking
+# black>=23.0.0  # For code formatting
+# ruff>=0.1.0    # For linting
