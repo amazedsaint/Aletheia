@@ -20,8 +20,8 @@ Aletheia is a framework for establishing computational trust in software impleme
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/aletheia.git
-cd aletheia
+git clone https://github.com/amazedsaint/Aletheia.git
+cd Aletheia
 
 # No external dependencies required - uses Python standard library only
 python3 --version  # Requires Python 3.8+
@@ -249,13 +249,13 @@ If you use Aletheia in your research, please cite:
 ```bibtex
 @software{aletheia2024,
   title = {Aletheia: An Epistemic Compiler for Computational Belief Certification},
-  author = {Your Name},
+  author = {amazedsaint},
   year = {2024},
-  url = {https://github.com/yourusername/aletheia}
+  url = {https://github.com/amazedsaint/Aletheia}
 }
 ```
 
 ## Contact
 
-- Issues: [GitHub Issues](https://github.com/yourusername/aletheia/issues)
-- Discussions: [GitHub Discussions](https://github.com/yourusername/aletheia/discussions)
+- Issues: [GitHub Issues](https://github.com/amazedsaint/Aletheia/issues)
+- Discussions: [GitHub Discussions](https://github.com/amazedsaint/Aletheia/discussions)
